@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Πρόγνωση Μουντιάλ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#0c1f16;--bg2:#08160f;--card:#11271b;--edge:#23463140;
+    --gold:#e7c15c;--green:#2fd07a;--txt:#eaf2ec;--mut:#7d9686;--line:#1d3a2a;--red:#e06b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);
+    background:radial-gradient(120% 80% at 50% -10%,#16382440,transparent 60%),linear-gradient(180deg,var(--bg),var(--bg2));
+    min-height:100vh;padding:0 0 60px}
+  header{text-align:center;padding:26px 18px 4px}
+  .eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  h1{font-family:'Anton';font-weight:400;font-size:clamp(26px,7vw,42px);text-transform:uppercase;margin-top:6px}
+  h1 span{color:var(--gold)}
+  .who{color:var(--mut);font-size:13px;margin-top:8px}
+  .who b{color:var(--txt)} .who a{color:var(--gold);cursor:pointer;text-decoration:none;margin-left:8px}
+  .wrap{max-width:540px;margin:0 auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:18px;margin-top:16px;box-shadow:0 4px 16px #0005}
+  .card h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px}
+  label{display:block;font-size:11px;color:var(--mut);margin:0 0 5px;font-weight:600;letter-spacing:.04em}
+  input{width:100%;background:#0b1d13;border:1px solid var(--line);border-radius:9px;color:var(--txt);padding:11px 12px;font-size:15px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--gold)}
+  input::placeholder{color:#4d6356}
+  button{background:linear-gradient(180deg,#2fd07a,#1f8f52);color:#06160d;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .15s}
+  button:hover{filter:brightness(1.08)} button:active{transform:translateY(1px)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:600}
+  button.sm{padding:7px 12px;font-size:12px}
+  .full{width:100%;margin-top:12px}
+  .score-row{display:flex;gap:8px;align-items:center}
+  .score-row input{text-align:center;font-weight:700;font-size:18px}
+  .vs{color:var(--mut);font-weight:700;font-size:13px}
+  .match{background:#0b1d13;border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:11px}
+  .match-head{font-weight:700;font-size:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .badge{font-size:11px;font-weight:700} .badge.ok{color:var(--green)} .badge.no{color:#5e7466}
+  .empty{color:#5e7466;font-size:13px;font-style:italic;text-align:center;padding:10px 0}
+  .tabs{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+  .tabs button{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:600;font-size:12px;padding:8px 13px}
+  .tabs button.on{background:#1f8f5226;border-color:var(--green);color:var(--green)}
+  .hidden{display:none}
+  .lead{display:flex;flex-direction:column;gap:8px}
+  .lrow{display:flex;align-items:center;gap:12px;background:#0b1d13;border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .lrow .rank{font-family:'Anton';font-size:18px;color:var(--mut);width:24px;text-align:center}
+  .lrow .pname{flex:1;font-weight:600}
+  .lrow .pts{font-weight:700;color:var(--green);font-size:17px}
+  .lrow .pts small{color:var(--mut);font-weight:500;font-size:11px}
+  .lrow.me{border-color:var(--green)}
+  .lrow:nth-child(1){border-color:var(--gold);background:linear-gradient(90deg,#e7c15c1a,#0b1d13)}
+  .lrow:nth-child(1) .rank{color:var(--gold)} .lrow:nth-child(1) .pname::after{content:" 🏆"}
+  .rules{font-size:12px;color:var(--mut);line-height:1.9} .rules b{color:var(--gold)}
+  .err{background:#3a1a1a;border:1px solid #5e2b2b;color:#f0b8b8;border-radius:9px;padding:10px 12px;font-size:13px;margin-top:12px;display:none}
+  .note{font-size:11px;color:#5e7466;margin-top:8px;line-height:1.55}
+  .pts-mine{font-size:12px;color:var(--green);font-weight:700;margin-top:8px}
+  .toggle{display:flex;gap:8px;margin-bottom:14px}
+  .toggle button{flex:1}
+  .config-warn{background:#3a2f1a;border:1px solid #5e4d2b;color:#f0dcb8;border-radius:9px;padding:12px;font-size:13px;line-height:1.6;margin-top:16px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Παιχνίδι Προβλέψεων</div>
+  <h1>Πρόγνωση <span>Μουντιάλ</span></h1>
+  <div class="who" id="whoBar"></div>
+</header>
+
+<div class="wrap">
+
+  <!-- Προειδοποίηση αν δεν έχουν μπει τα κλειδιά -->
+  <div class="config-warn" id="configWarn" style="display:none">
+    ⚠️ Δεν έχεις βάλει ακόμα τα κλειδιά του Supabase. Άνοιξε το αρχείο, βρες τις γραμμές
+    <b>SUPABASE_URL</b> και <b>SUPABASE_ANON_KEY</b> στην κορυφή του &lt;script&gt; και βάλε τα δικά σου
+    (οδηγίες στο αρχείο <b>setup-supabase.md</b>).
+  </div>
+
+  <!-- ===== ΟΘΟΝΗ ΕΙΣΟΔΟΥ ===== -->
+  <section id="auth">
+    <div class="card">
+      <div class="toggle">
+        <button id="tabLogin" class="" onclick="setAuthMode('login')">Είσοδος</button>
+        <button id="tabReg" class="ghost" onclick="setAuthMode('register')">Εγγραφή</button>
+      </div>
+      <label>Όνομα χρήστη</label>
+      <input id="username" placeholder="π.χ. giorgos" autocomplete="username">
+      <label style="margin-top:12px">Κωδικός</label>
+      <input id="password" type="password" placeholder="τουλάχιστον 6 χαρακτήρες" autocomplete="current-password">
+      <button class="full" id="authBtn" onclick="doAuth()">Είσοδος</button>
+      <div class="err" id="authErr"></div>
+      <div class="note" id="authNote">Νέος; Πάτα «Εγγραφή» πάνω για να φτιάξεις λογαριασμό.</div>
+    </div>
+  </section>
+
+  <!-- ===== ΕΦΑΡΜΟΓΗ ===== -->
+  <section id="app" class="hidden">
+    <div class="tabs">
+      <button data-tab="predict" class="on">Προβλέψεις</button>
+      <button data-tab="results" id="resTabBtn">Αποτελέσματα</button>
+      <button data-tab="board">Κατάταξη</button>
+    </div>
+
+    <!-- Προβλέψεις -->
+    <section id="tab-predict">
+      <div class="card">
+        <h2>Οι προβλέψεις σου</h2>
+        <div id="predList"><div class="empty">Φόρτωση…</div></div>
+      </div>
+      <div class="card">
+        <h2>Βαθμολογία</h2>
+        <div class="rules">
+          <b>6 πόντοι</b> — ακριβές σκορ<br>
+          <b>3 πόντοι</b> — σωστό αποτέλεσμα (νίκη/ισοπαλία/ήττα)<br>
+          <b>+1 πόντος</b> — για κάθε σκόρερ που βρίσκεις
+        </div>
+      </div>
+    </section>
+
+    <!-- Αποτελέσματα (μόνο διαχειριστής) -->
+    <section id="tab-results" class="hidden">
+      <div class="card" id="adminAdd">
+        <h2>Νέος αγώνας</h2>
+        <div class="score-row">
+          <input id="newA" placeholder="Γηπεδούχος">
+          <span class="vs">VS</span>
+          <input id="newB" placeholder="Φιλοξενούμενος">
+        </div>
+        <button class="full" onclick="addMatch()">Προσθήκη αγώνα</button>
+      </div>
+      <div class="card">
+        <h2>Καταχώρηση αποτελεσμάτων</h2>
+        <div id="resList"><div class="empty">Φόρτωση…</div></div>
+      </div>
+    </section>
+
+    <!-- Κατάταξη -->
+    <section id="tab-board" class="hidden">
+      <div class="card">
+        <h2>Κατάταξη</h2>
+        <div class="lead" id="board"><div class="empty">Φόρτωση…</div></div>
+      </div>
+    </section>
+  </section>
+
+</div>
+
+<!-- Supabase client από CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =======================================================================
+   1) ΒΑΛΕ ΕΔΩ ΤΑ ΔΙΚΑ ΣΟΥ ΚΛΕΙΔΙΑ  (από Supabase → Project Settings → API)
+   ======================================================================= */
+const SUPABASE_URL      ='https://whqhrwwgjhpskqdghico.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocWhyd3dnamhwc2txZGdoaWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MTkxNjgsImV4cCI6MjA5ODM5NTE2OH0.ccrUW_Cfak7XvHib-xe5ZUvxqrfEh-JM89hAXcSkr-g';
+
+/* Σύστημα βαθμολογίας — άλλαξέ το εδώ αν θες */
+const PTS_EXACT = 6;   // ακριβές σκορ
+const PTS_OUTCOME = 3; // σωστό αποτέλεσμα
+const PTS_SCORER = 1;  // ανά σωστό σκόρερ
+
+/* Ψεύτικο domain ώστε να μπαίνουν με σκέτο username (όχι email) */
+const EMAIL_DOMAIN = '@wcpool.local';
+
+/* ----------------------------------------------------------------------- */
+let sb = null, me = null, myProfile = null;
+let cacheMatches = [], cacheProfiles = [], cachePreds = [];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sign = n => n>0?1:(n<0?-1:0);
+
+function configured(){ return SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length>20; }
+
+/* ---- Εκκίνηση ---- */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  if(!configured()){ $('configWarn').style.display='block'; return; }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ await onLogin(session.user); }
+});
+
+/* ---- Είσοδος / Εγγραφή ---- */
+let authMode = 'login';
+function setAuthMode(m){
+  authMode=m;
+  $('tabLogin').className = m==='login'?'':'ghost';
+  $('tabReg').className   = m==='register'?'':'ghost';
+  $('authBtn').textContent = m==='login'?'Είσοδος':'Δημιουργία λογαριασμού';
+  $('authNote').textContent = m==='login'
+    ? 'Νέος; Πάτα «Εγγραφή» πάνω για να φτιάξεις λογαριασμό.'
+    : 'Διάλεξε όνομα & κωδικό. Δεν χρειάζεται email.';
+  $('authErr').style.display='none';
+}
+async function doAuth(){
+  const u = $('username').value.trim().toLowerCase();
+  const p = $('password').value;
+  if(!u || p.length<6){ return showErr('Συμπλήρωσε όνομα και κωδικό (6+ χαρακτήρες).'); }
+  const email = u + EMAIL_DOMAIN;
+  try{
+    if(authMode==='register'){
+      const { data, error } = await sb.auth.signUp({ email, password:p });
+      if(error) throw error;
+      // φτιάχνουμε προφίλ με το username
+      await sb.from('profiles').insert({ id:data.user.id, username:u, is_admin:false });
+      // αυτόματη είσοδος
+      const { error:e2 } = await sb.auth.signInWithPassword({ email, password:p });
+      if(e2) throw e2;
+      const { data:{ user } } = await sb.auth.getUser();
+      await onLogin(user);
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password:p });
+      if(error) throw error;
+      await onLogin(data.user);
+    }
+  }catch(err){ showErr(translateErr(err.message)); }
+}
+function showErr(m){ const e=$('authErr'); e.textContent=m; e.style.display='block'; }
+function translateErr(m){
+  if(/already registered/i.test(m)) return 'Υπάρχει ήδη χρήστης με αυτό το όνομα.';
+  if(/Invalid login/i.test(m)) return 'Λάθος όνομα ή κωδικός.';
+  if(/Email not confirmed/i.test(m)) return 'Πρέπει να απενεργοποιήσεις το «Confirm email» στο Supabase (δες οδηγίες).';
+  return m;
+}
+
+async function onLogin(user){
+  me = user;
+  const { data:prof } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  myProfile = prof || { username:user.email.replace(EMAIL_DOMAIN,''), is_admin:false };
+  $('auth').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('whoBar').innerHTML = `Σύνδεση ως <b>${esc(myProfile.username)}</b>`
+    + (myProfile.is_admin?' (διαχειριστής)':'')
+    + ` <a onclick="logout()">Έξοδος</a>`;
+  // κρύψε καρτέλα αποτελεσμάτων αν δεν είναι admin
+  $('resTabBtn').style.display = myProfile.is_admin ? '' : 'none';
+  await loadAll();
+}
+async function logout(){ await sb.auth.signOut(); location.reload(); }
+
+/* ---- Φόρτωση δεδομένων ---- */
+async function loadAll(){
+  const [{data:m},{data:pr},{data:pd}] = await Promise.all([
+    sb.from('matches').select('*').order('id'),
+    sb.from('profiles').select('id,username'),
+    sb.from('predictions').select('*')
+  ]);
+  cacheMatches = m||[]; cacheProfiles = pr||[]; cachePreds = pd||[];
+  renderPredict(); renderResults(); renderBoard();
+}
+
+/* ---- Καρτέλες ---- */
+document.querySelectorAll('.tabs button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    ['predict','results','board'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
+  };
+});
+
+/* ---- Προβλέψεις (κάθε χρήστης βλέπει & σώζει τις δικές του) ---- */
+function myPred(matchId){ return cachePreds.find(p=>p.user_id===me.id && p.match_id===matchId); }
+function renderPredict(){
+  const box=$('predList');
+  if(cacheMatches.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες ακόμα</div>'; return; }
+  box.innerHTML = cacheMatches.map(m=>{
+    const pr = myPred(m.id) || {pred_a:'',pred_b:'',scorers:[]};
+    const locked = m.finished;
+    const scStr = (pr.scorers||[]).join(', ');
+    let mine='';
+    if(locked){ mine = `<div class="pts-mine">Κέρδισες: ${scorePred(pr,m)} πόντους</div>`; }
+    return `<div class="match">
+      <div class="match-head">
+        <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)}</span>
+        ${locked?`<span class="badge ok">${m.res_a}–${m.res_b}</span>`:''}
+      </div>
+      <div class="score-row">
+        <input type="number" min="0" id="pa_${m.id}" value="${pr.pred_a}" ${locked?'disabled':''} placeholder="0">
+        <span class="vs">–</span>
+        <input type="number" min="0" id="pb_${m.id}" value="${pr.pred_b}" ${locked?'disabled':''} placeholder="0">
+      </div>
+      <div style="margin-top:9px">
+        <label>Σκόρερ (χώρισέ τους με κόμμα)</label>
+        <input id="ps_${m.id}" value="${esc(scStr)}" ${locked?'disabled':''} placeholder="π.χ. Messi, Alvarez">
+      </div>
+      ${mine}
+      ${locked?'':`<button class="sm" style="margin-top:10px" onclick="savePred(${m.id})">Αποθήκευση</button>`}
+    </div>`;
+  }).join('');
+}
+async function savePred(id){
+  const a=$('pa_'+id).value, b=$('pb_'+id).value;
+  if(a===''||b===''){ alert('Συμπλήρωσε το σκορ'); return; }
+  const scorers = $('ps_'+id).value.split(',').map(s=>s.trim()).filter(Boolean);
+  const row = { user_id:me.id, match_id:id, pred_a:+a, pred_b:+b, scorers };
+  const { error } = await sb.from('predictions').upsert(row, { onConflict:'user_id,match_id' });
+  if(error){ alert('Σφάλμα: '+error.message); return; }
+  await loadAll(); toast('Αποθηκεύτηκε ✓');
+}
+
+/* ---- Αποτελέσματα (admin) ---- */
+async function addMatch(){
+  const a=$('newA').value.trim(), b=$('newB').value.trim();
+  if(!a||!b) return;
+  const { error } = await sb.from('matches').insert({ team_a:a, team_b:b });
+  if(error){ alert('Σφάλμα: '+error.message); return; }
+  $('newA').value=''; $('newB').value='';
+  await loadAll(); toast('Προστέθηκε ο αγώνας ✓');
+}
+function renderResults(){
+  const box=$('resList');
+  if(cacheMatches.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες</div>'; return; }
+  box.innerHTML = cacheMatches.map(m=>{
+    const scStr=(m.scorers||[]).join(', ');
+    return `<div class="match">
+      <div class="match-head">
+        <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)}</span>
+        <span class="badge ${m.finished?'ok':'no'}">${m.finished?'Καταχωρήθηκε':'—'}</span>
+      </div>
+      <div class="score-row">
+        <input type="number" min="0" id="ra_${m.id}" value="${m.res_a??''}" placeholder="0">
+        <span class="vs">–</span>
+        <input type="number" min="0" id="rb_${m.id}" value="${m.res_b??''}" placeholder="0">
+      </div>
+      <div style="margin-top:9px">
+        <label>Σκόρερ (με κόμμα)</label>
+        <input id="rs_${m.id}" value="${esc(scStr)}" placeholder="π.χ. Messi, Alvarez">
+      </div>
+      <button class="sm" style="margin-top:10px" onclick="saveResult(${m.id})">Καταχώρηση</button>
+      <button class="sm ghost" style="margin-top:10px" onclick="delMatch(${m.id})">Διαγραφή</button>
+    </div>`;
+  }).join('');
+}
+async function saveResult(id){
+  const a=$('ra_'+id).value, b=$('rb_'+id).value;
+  if(a===''||b===''){ alert('Συμπλήρωσε το σκορ'); return; }
+  const scorers = $('rs_'+id).value.split(',').map(s=>s.trim()).filter(Boolean);
+  const { error } = await sb.from('matches').update({ res_a:+a, res_b:+b, scorers, finished:true }).eq('id', id);
+  if(error){ alert('Σφάλμα: '+error.message); return; }
+  await loadAll(); toast('Καταχωρήθηκε ✓');
+}
+async function delMatch(id){
+  if(!confirm('Σίγουρα διαγραφή;')) return;
+  await sb.from('matches').delete().eq('id', id);
+  await loadAll();
+}
+
+/* ---- ΛΟΓΙΚΗ ΒΑΘΜΟΛΟΓΙΑΣ ---- */
+function scorePred(pr, m){
+  if(!m.finished || !pr || pr.pred_a==null) return 0;
+  let pts=0;
+  if(pr.pred_a===m.res_a && pr.pred_b===m.res_b) pts += PTS_EXACT;
+  else if(sign(pr.pred_a-pr.pred_b)===sign(m.res_a-m.res_b)) pts += PTS_OUTCOME;
+  // +1 για κάθε σωστό σκόρερ (case-insensitive)
+  const actual = (m.scorers||[]).map(s=>s.toLowerCase());
+  const guessed = [...new Set((pr.scorers||[]).map(s=>s.toLowerCase()))];
+  guessed.forEach(g=>{ if(actual.includes(g)) pts += PTS_SCORER; });
+  return pts;
+}
+function totalFor(userId){
+  let t=0;
+  cacheMatches.forEach(m=>{
+    if(!m.finished) return;
+    const pr = cachePreds.find(p=>p.user_id===userId && p.match_id===m.id);
+    if(pr) t += scorePred(pr, m);
+  });
+  return t;
+}
+
+/* ---- Κατάταξη ---- */
+function renderBoard(){
+  const box=$('board');
+  if(cacheProfiles.length===0){ box.innerHTML='<div class="empty">Κανείς δεν έχει εγγραφεί ακόμα</div>'; return; }
+  const ranked = cacheProfiles.map(p=>({ id:p.id, name:p.username, pts:totalFor(p.id) }))
+                              .sort((a,b)=>b.pts-a.pts);
+  box.innerHTML = ranked.map((p,i)=>`
+    <div class="lrow ${p.id===me.id?'me':''}">
+      <span class="rank">${i+1}</span>
+      <span class="pname">${esc(p.name)}</span>
+      <span class="pts">${p.pts} <small>πόντοι</small></span>
+    </div>`).join('');
+}
+
+/* ---- Toast ---- */
+function toast(msg){
+  const d=document.createElement('div'); d.textContent=msg;
+  d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f8f52;color:#06160d;font-weight:700;padding:11px 18px;border-radius:10px;font-size:13px;z-index:99;box-shadow:0 6px 20px #0007';
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1700);
+}
+setAuthMode('login');
+</script>
+</body>
+</html>
