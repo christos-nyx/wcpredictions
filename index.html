@@ -47,6 +47,9 @@
   .badge{font-size:11px;font-weight:700} .badge.ok{color:var(--green)} .badge.no{color:#5e7466} .badge.lock{color:var(--red)}
   .kickoff{font-size:11px;color:var(--mut);margin-top:2px}
   .players{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .scorer-group{margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+  .scorer-group:first-child{margin-top:6px;padding-top:0;border-top:none}
+  .scorer-team-label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
   .player-chip{display:flex;align-items:center;gap:7px;background:#0c2317;border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:12px}
   .player-chip.on{border-color:var(--green);background:#1f8f521a}
   .pc-btn{width:22px;height:22px;padding:0;border-radius:50%;font-size:14px;line-height:1;font-weight:700;background:#16321f;color:var(--txt);box-shadow:none}
@@ -449,31 +452,39 @@ document.querySelectorAll('.tabs button').forEach(b=>{
 });
 
 /* ---- Επιλογή σκόρερ από λίστα παικτών, με αριθμό γκολ ο καθένας ---- */
-function roster(m){
-  const a = cacheTeamRosters[m.team_a] || m.roster_a || [];
-  const b = cacheTeamRosters[m.team_b] || m.roster_b || [];
-  return [...a, ...b];
-}
+function rosterA(m){ return cacheTeamRosters[m.team_a] || m.roster_a || []; }
+function rosterB(m){ return cacheTeamRosters[m.team_b] || m.roster_b || []; }
+function roster(m){ return [...rosterA(m), ...rosterB(m)]; }
 function currentMax(prefix, id){
   const aEl = $((prefix==='p'?'pa_':'ra_')+id), bEl = $((prefix==='p'?'pb_':'rb_')+id);
   return (+(aEl&&aEl.value||0)) + (+(bEl&&bEl.value||0));
 }
-function scorerPicker(prefix, id, players, selectedMap, disabled){
+function scorerChip(prefix, id, name, selectedMap, disabled){
+  const cnt = selectedMap[name] || 0;
+  const minus = disabled ? '' : `<button type="button" class="sm pc-btn" onclick="bumpScorer(this,'${prefix}',${id},-1)">−</button>`;
+  const plus  = disabled ? '' : `<button type="button" class="sm pc-btn" onclick="bumpScorer(this,'${prefix}',${id},1)">+</button>`;
+  return `<div class="player-chip ${cnt>0?'on':''}" data-name="${esc(name)}">
+    <span>${esc(name)}</span>
+    ${minus}
+    <span class="pc-count" data-count="${cnt}">${cnt||''}</span>
+    ${plus}
+  </div>`;
+}
+function scorerTeamGroup(prefix, id, teamName, players, selectedMap, disabled){
   if(!players || players.length===0){
-    return `<div class="kickoff">Δεν έχει οριστεί λίστα παικτών για αυτόν τον αγώνα ακόμα.</div>`;
+    return `<div class="scorer-group"><div class="scorer-team-label">${esc(teamName)}</div><div class="kickoff">Λείπει ρόστερ — μπες στην καρτέλα "Ρόστερ Ομάδων".</div></div>`;
   }
+  return `<div class="scorer-group">
+    <div class="scorer-team-label">${esc(teamName)}</div>
+    <div class="players">${players.map(name=>scorerChip(prefix,id,name,selectedMap,disabled)).join('')}</div>
+  </div>`;
+}
+function scorerPicker(prefix, id, teamA, playersA, teamB, playersB, selectedMap, disabled){
   selectedMap = selectedMap || {};
-  return `<div class="players" id="${prefix}players_${id}">` + players.map(name=>{
-    const cnt = selectedMap[name] || 0;
-    const minus = disabled ? '' : `<button type="button" class="sm pc-btn" onclick="bumpScorer(this,'${prefix}',${id},-1)">−</button>`;
-    const plus  = disabled ? '' : `<button type="button" class="sm pc-btn" onclick="bumpScorer(this,'${prefix}',${id},1)">+</button>`;
-    return `<div class="player-chip ${cnt>0?'on':''}" data-name="${esc(name)}">
-      <span>${esc(name)}</span>
-      ${minus}
-      <span class="pc-count" data-count="${cnt}">${cnt||''}</span>
-      ${plus}
-    </div>`;
-  }).join('') + `</div>`;
+  return `<div id="${prefix}players_${id}">
+    ${scorerTeamGroup(prefix, id, teamA, playersA, selectedMap, disabled)}
+    ${scorerTeamGroup(prefix, id, teamB, playersB, selectedMap, disabled)}
+  </div>`;
 }
 function sumScorers(prefix, id){
   const box = $(prefix+'players_'+id);
@@ -527,7 +538,7 @@ function predictCardHtml(m){
     </div>
     <div style="margin-top:9px">
       <label>Σκόρερ — πόσα γκολ ο καθένας (έως όσα γκολ προβλέπεις συνολικά)</label>
-      ${scorerPicker('p', m.id, roster(m), pr.scorers_detail||{}, locked)}
+      ${scorerPicker('p', m.id, m.team_a, rosterA(m), m.team_b, rosterB(m), pr.scorers_detail||{}, locked)}
     </div>
     ${mine}
     ${locked?'':`<button class="sm" style="margin-top:10px" onclick="savePred(${m.id})">Αποθήκευση</button>`}
@@ -600,7 +611,7 @@ function resultCardHtml(m){
     <div style="margin-top:9px">
       <label>Ποιοι σκόραραν — πόσα γκολ ο καθένας</label>
       ${missing.length ? `<div class="kickoff">Λείπει ρόστερ για: ${missing.map(esc).join(', ')} — μπες στην καρτέλα "Ρόστερ Ομάδων".</div>` : ''}
-      ${scorerPicker('r', m.id, roster(m), m.scorers_detail||{}, false)}
+      ${scorerPicker('r', m.id, m.team_a, rosterA(m), m.team_b, rosterB(m), m.scorers_detail||{}, false)}
     </div>
     <button class="sm" style="margin-top:10px" onclick="saveResult(${m.id})">Καταχώρηση αποτελέσματος</button>
     <button class="sm ghost" style="margin-top:10px" onclick="delMatch(${m.id})">Διαγραφή</button>
