@@ -46,15 +46,16 @@
   .match-head{font-weight:700;font-size:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
   .badge{font-size:11px;font-weight:700} .badge.ok{color:var(--green)} .badge.no{color:#5e7466} .badge.lock{color:var(--red)}
   .kickoff{font-size:11px;color:var(--mut);margin-top:2px}
-  .players{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .players{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:7px;margin-top:6px}
   .scorer-group{margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
   .scorer-group:first-child{margin-top:6px;padding-top:0;border-top:none}
   .scorer-team-label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
-  .player-chip{display:flex;align-items:center;gap:7px;background:#0c2317;border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:12px}
-  .player-chip.on{border-color:var(--green);background:#1f8f521a}
-  .pc-btn{width:22px;height:22px;padding:0;border-radius:50%;font-size:14px;line-height:1;font-weight:700;background:#16321f;color:var(--txt);box-shadow:none}
+  .player-chip{display:flex;align-items:center;justify-content:space-between;gap:4px;background:#17351f;border:1px solid #2c5236;border-radius:10px;padding:6px 6px 6px 9px;font-size:11.5px;box-shadow:0 1px 3px #0004}
+  .player-chip span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .player-chip.on{border-color:var(--green);background:#1f8f5233}
+  .pc-btn{width:20px;height:20px;padding:0;border-radius:50%;font-size:13px;line-height:1;font-weight:700;background:#234a2e;color:var(--txt);box-shadow:none;flex-shrink:0}
   .pc-btn:hover{filter:none;background:#1f8f52}
-  .pc-count{min-width:14px;text-align:center;font-weight:700;color:var(--green)}
+  .pc-count{min-width:12px;text-align:center;font-weight:700;color:var(--green);flex-shrink:0}
   .recap-row{display:flex;justify-content:space-between;align-items:center;background:#0b1d13;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-top:7px;font-size:13px}
   .recap-row .who{font-weight:700;display:inline-flex;align-items:center;gap:6px} .recap-row .det{color:var(--mut);font-size:11px;margin-top:2px}
   .recap-row .rp{color:var(--green);font-weight:700}
