@@ -735,7 +735,11 @@ function renderUsers(){
         ${avatarHtml(p.username)}
         <span class="pname" style="flex:1">${esc(p.username)} ${p.is_admin?'<span class="badge ok">διαχειριστής</span>':''}${adj?`<span class="badge ${adj>0?'ok':'no'}"> ${adj>0?'+':''}${adj} bonus</span>`:''}</span>
         <button class="sm ghost" onclick="toggleAdmin('${p.id}', ${!p.is_admin})">${p.is_admin?'Αφαίρεση admin':'Κάνε admin'}</button>
-        <button class="sm ghost" onclick="resetUserPassword('${p.id}','${esc(p.username)}')">Reset κωδικού</button>
+      </div>
+      <label style="margin-top:10px">Κωδικός — άσε κενό για τυχαίο, ή γράψε δικό σου (6+ χαρακτήρες)</label>
+      <div class="score-row">
+        <input type="text" id="pw_${p.id}" placeholder="π.χ. giorgos2026" style="flex:1">
+        <button class="sm ghost" onclick="resetUserPassword('${p.id}','${esc(p.username)}')">Ορισμός κωδικού</button>
       </div>
       <label style="margin-top:10px">Διόρθωση πόντων (bonus/ποινή)</label>
       <div class="score-row">
@@ -771,13 +775,21 @@ async function toggleAdmin(targetId, makeAdmin){
   }catch(err){ alert('Σφάλμα: '+(err.message||err)); }
 }
 async function resetUserPassword(targetId, username){
-  if(!confirm(`Να γίνει reset ο κωδικός του/της ${username};`)) return;
+  const custom = ($('pw_'+targetId).value || '').trim();
+  if(custom && custom.length < 6){ alert('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες.'); return; }
+  const msg = custom
+    ? `Να οριστεί ο κωδικός "${custom}" για τον/την ${username};`
+    : `Να γίνει τυχαίο reset του κωδικού του/της ${username};`;
+  if(!confirm(msg)) return;
   try{
-    const { data, error } = await sb.functions.invoke('admin-manage-user', { body:{ action:'reset_password', target_user_id:targetId } });
+    const body = { action:'reset_password', target_user_id:targetId };
+    if(custom) body.new_password = custom;
+    const { data, error } = await sb.functions.invoke('admin-manage-user', { body });
     if(error) throw error;
     if(data?.error) throw new Error(data.error);
-    alert(`Νέος κωδικός για τον/την ${username}:\n\n${data.newPassword}\n\nΠες του/της τον για να συνδεθεί, μετά μπορεί να τον αλλάξει.`);
-  }catch(err){ alert('Σφάλμα: '+(err.message||err)+'\nΈχεις ρυθμίσει τη Edge Function "admin-manage-user";'); }
+    $('pw_'+targetId).value = '';
+    alert(`Ο κωδικός για τον/την ${username} είναι πλέον:\n\n${data.newPassword}\n\nΠες του/της τον για να συνδεθεί.`);
+  }catch(err){ alert('Σφάλμα: '+(err.message||err)+'\nΈχεις ενημερώσει τη Edge Function "admin-manage-user";'); }
 }
 
 /* ---- Ρόστερ ομάδων (μία φορά ανά ομάδα, όχι ανά αγώνα) ---- */
