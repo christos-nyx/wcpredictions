@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Πρόγνωση Μουντιάλ</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0c1f16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Μουντιάλ">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap');
   :root{
@@ -37,7 +44,31 @@
   .vs{color:var(--mut);font-weight:700;font-size:13px}
   .match{background:#0b1d13;border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:11px}
   .match-head{font-weight:700;font-size:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-  .badge{font-size:11px;font-weight:700} .badge.ok{color:var(--green)} .badge.no{color:#5e7466}
+  .badge{font-size:11px;font-weight:700} .badge.ok{color:var(--green)} .badge.no{color:#5e7466} .badge.lock{color:var(--red)}
+  .kickoff{font-size:11px;color:var(--mut);margin-top:2px}
+  .players{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .player-chip{display:flex;align-items:center;gap:7px;background:#0c2317;border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:12px}
+  .player-chip.on{border-color:var(--green);background:#1f8f521a}
+  .pc-btn{width:22px;height:22px;padding:0;border-radius:50%;font-size:14px;line-height:1;font-weight:700;background:#16321f;color:var(--txt);box-shadow:none}
+  .pc-btn:hover{filter:none;background:#1f8f52}
+  .pc-count{min-width:14px;text-align:center;font-weight:700;color:var(--green)}
+  .recap-row{display:flex;justify-content:space-between;align-items:center;background:#0b1d13;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-top:7px;font-size:13px}
+  .recap-row .who{font-weight:700;display:inline-flex;align-items:center;gap:6px} .recap-row .det{color:var(--mut);font-size:11px;margin-top:2px}
+  .recap-row .rp{color:var(--green);font-weight:700}
+  .mday{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:18px 0 -4px}
+  .mday:first-child{margin-top:0}
+  .chat-box{display:flex;flex-direction:column;gap:10px;max-height:55vh;overflow-y:auto;padding-right:2px}
+  .bubble{max-width:84%;background:#0b1d13;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+  .bubble.me{align-self:flex-end;border-color:var(--green);background:#1f8f521a}
+  .bubble .who{font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+  .bubble.me .who{color:var(--green)}
+  .bubble .body{font-size:14px;line-height:1.4;word-wrap:break-word}
+  .bubble .when{font-size:10px;color:var(--mut);margin-top:3px;text-align:right}
+  .chat-input{display:flex;gap:8px;margin-top:14px}
+  .chat-input input{flex:1}
+  .chat-input button{flex-shrink:0}
+  .avatar{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0}
+  .lrow{gap:10px}
   .empty{color:#5e7466;font-size:13px;font-style:italic;text-align:center;padding:10px 0}
   .tabs{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center}
   .tabs button{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:600;font-size:12px;padding:8px 13px}
@@ -101,6 +132,10 @@
       <button data-tab="predict" class="on">Προβλέψεις</button>
       <button data-tab="results" id="resTabBtn">Αποτελέσματα</button>
       <button data-tab="board">Κατάταξη</button>
+      <button data-tab="recap">Αναλυτικά</button>
+      <button data-tab="chat">Σχόλια</button>
+      <button data-tab="users" id="usersTabBtn">Διαχείριση</button>
+      <button data-tab="rosters" id="rostersTabBtn">Ρόστερ Ομάδων</button>
     </div>
 
     <!-- Προβλέψεις -->
@@ -114,19 +149,29 @@
         <div class="rules">
           <b>6 πόντοι</b> — ακριβές σκορ<br>
           <b>3 πόντοι</b> — σωστό αποτέλεσμα (νίκη/ισοπαλία/ήττα)<br>
-          <b>+1 πόντος</b> — για κάθε σκόρερ που βρίσκεις
+          <b>+1 πόντος</b> — για κάθε σκόρερ που βρίσκεις (έως όσα γκολ προβλέπεις)<br>
+          <b>🔒</b> — οι προβλέψεις κλειδώνουν αυτόματα μόλις φτάσει η ώρα έναρξης
         </div>
       </div>
     </section>
 
     <!-- Αποτελέσματα (μόνο διαχειριστής) -->
     <section id="tab-results" class="hidden">
+      <div class="card">
+        <h2>Αυτόματος συγχρονισμός</h2>
+        <div class="note">Οι αγώνες και τα τελικά σκορ του Μουντιάλ έρχονται αυτόματα από το football-data.org (αν έχεις ρυθμίσει τη γέφυρα — δες οδηγίες). Το κουμπί παρακάτω το τραβάει άμεσα, χωρίς να περιμένεις το προγραμματισμένο πέρασμα.</div>
+        <button class="full" id="syncBtn" onclick="syncNow()">🔄 Συγχρονισμός τώρα</button>
+      </div>
       <div class="card" id="adminAdd">
-        <h2>Νέος αγώνας</h2>
+        <h2>Χειροκίνητη προσθήκη αγώνα (προαιρετικό)</h2>
         <div class="score-row">
           <input id="newA" placeholder="Γηπεδούχος">
           <span class="vs">VS</span>
           <input id="newB" placeholder="Φιλοξενούμενος">
+        </div>
+        <div class="score-row" style="margin-top:9px">
+          <input id="newKick" type="datetime-local">
+          <input id="newMday" type="number" min="1" placeholder="Αγωνιστική #">
         </div>
         <button class="full" onclick="addMatch()">Προσθήκη αγώνα</button>
       </div>
@@ -143,6 +188,44 @@
         <div class="lead" id="board"><div class="empty">Φόρτωση…</div></div>
       </div>
     </section>
+
+    <!-- Αναλυτικά: τι έβαλε ο καθένας ανά αγωνιστική (μόνο για ολοκληρωμένους αγώνες) -->
+    <section id="tab-recap" class="hidden">
+      <div class="card">
+        <h2>Τι έπαιξε ο καθένας</h2>
+        <div id="recap"><div class="empty">Φόρτωση…</div></div>
+      </div>
+    </section>
+
+    <!-- Σχόλια / τσατ παρέας -->
+    <section id="tab-chat" class="hidden">
+      <div class="card">
+        <h2>Σχόλια</h2>
+        <div class="chat-box" id="chatBox"><div class="empty">Φόρτωση…</div></div>
+        <div class="chat-input">
+          <input id="chatMsg" placeholder="Γράψε κάτι…" maxlength="500" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="sm" onclick="sendChat()">Στείλε</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Διαχείριση χρηστών (μόνο admin) -->
+    <section id="tab-users" class="hidden">
+      <div class="card">
+        <h2>Χρήστες</h2>
+        <div class="note">Κάνε κάποιον διαχειριστή ή κάνε reset το κωδικό του αν τον ξέχασε (θα σου δοθεί νέος κωδικός να του τον πεις).</div>
+        <div id="usersList"><div class="empty">Φόρτωση…</div></div>
+      </div>
+    </section>
+
+    <!-- Ρόστερ ομάδων (μόνο admin) — μία φορά ανά ομάδα, όχι ανά αγώνα -->
+    <section id="tab-rosters" class="hidden">
+      <div class="card">
+        <h2>Ρόστερ Ομάδων</h2>
+        <div class="note">Γράψε το ρόστερ κάθε ομάδας ΜΙΑ φορά εδώ — θα χρησιμοποιείται αυτόματα σε ΟΛΟΥΣ τους αγώνες της ομάδας, χωρίς να το ξαναγράφεις κάθε φορά.</div>
+        <div id="rostersList"><div class="empty">Φόρτωση…</div></div>
+      </div>
+    </section>
   </section>
 
 </div>
@@ -153,8 +236,8 @@
 /* =======================================================================
    1) ΒΑΛΕ ΕΔΩ ΤΑ ΔΙΚΑ ΣΟΥ ΚΛΕΙΔΙΑ  (από Supabase → Project Settings → API)
    ======================================================================= */
-const SUPABASE_URL      ='https://whqhrwwgjhpskqdghico.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocWhyd3dnamhwc2txZGdoaWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MTkxNjgsImV4cCI6MjA5ODM5NTE2OH0.ccrUW_Cfak7XvHib-xe5ZUvxqrfEh-JM89hAXcSkr-g';
+const SUPABASE_URL      = 'ΒΑΛΕ_ΤΟ_PROJECT_URL_ΕΔΩ';
+const SUPABASE_ANON_KEY = 'ΒΑΛΕ_ΤΟ_ANON_KEY_ΕΔΩ';
 
 /* Σύστημα βαθμολογίας — άλλαξέ το εδώ αν θες */
 const PTS_EXACT = 6;   // ακριβές σκορ
@@ -166,11 +249,18 @@ const EMAIL_DOMAIN = '@wcpool.local';
 
 /* ----------------------------------------------------------------------- */
 let sb = null, me = null, myProfile = null;
-let cacheMatches = [], cacheProfiles = [], cachePreds = [];
+let cacheMatches = [], cacheProfiles = [], cachePreds = [], cacheAdj = [], cacheTeamRosters = {};
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sign = n => n>0?1:(n<0?-1:0);
+const AVATAR_COLORS = ['#e7c15c','#2fd07a','#6ba3e0','#e08a6b','#b07be0','#e06b9e','#6be0c9'];
+function avatarHtml(name){
+  const n = String(name||'?');
+  const hash = [...n].reduce((h,c)=>h+c.charCodeAt(0),0);
+  const color = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  return `<span class="avatar" style="background:${color}1a;color:${color};border:1px solid ${color}55">${esc(n[0]?.toUpperCase()||'?')}</span>`;
+}
 
 function configured(){ return SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length>20; }
 
@@ -236,19 +326,116 @@ async function onLogin(user){
     + ` <a onclick="logout()">Έξοδος</a>`;
   // κρύψε καρτέλα αποτελεσμάτων αν δεν είναι admin
   $('resTabBtn').style.display = myProfile.is_admin ? '' : 'none';
+  $('usersTabBtn').style.display = myProfile.is_admin ? '' : 'none';
+  $('rostersTabBtn').style.display = myProfile.is_admin ? '' : 'none';
   await loadAll();
+  await loadChat();
+  subscribeChat();
 }
 async function logout(){ await sb.auth.signOut(); location.reload(); }
 
+/* ---- Ομαδοποίηση αγώνων σε ομίλους/φάσεις νοκ-άουτ ---- */
+const STAGE_LABELS = {
+  LAST_64:'Φάση των 64', LAST_32:'Φάση των 32', LAST_16:'Φάση των 16', ROUND_OF_16:'Φάση των 16',
+  QUARTER_FINALS:'Προημιτελικά', SEMI_FINALS:'Ημιτελικά', THIRD_PLACE:'Μικρός τελικός', FINAL:'Τελικός'
+};
+const STAGE_ORDER = ['LAST_64','LAST_32','LAST_16','ROUND_OF_16','QUARTER_FINALS','SEMI_FINALS','THIRD_PLACE','FINAL'];
+function groupKey(m){
+  if(m.group_name) return m.group_name;
+  if(m.stage) return m.stage;
+  if(m.matchday) return 'MATCHDAY_'+m.matchday;
+  return 'OTHER';
+}
+function groupLabel(key){
+  if(key.startsWith('GROUP_')) return 'Όμιλος '+key.slice(-1);
+  if(key.startsWith('MATCHDAY_')) return 'Αγωνιστική '+key.split('_')[1];
+  return STAGE_LABELS[key] || (key==='OTHER' ? 'Άλλοι αγώνες' : key);
+}
+function groupPriority(key){
+  if(key.startsWith('GROUP_')) return key.charCodeAt(key.length-1);
+  const idx = STAGE_ORDER.indexOf(key);
+  return idx>=0 ? 200+idx : 999;
+}
+function groupMatches(list){
+  const groups = {};
+  list.forEach(m=>{ const k=groupKey(m); (groups[k]=groups[k]||[]).push(m); });
+  return Object.keys(groups).sort((a,b)=>groupPriority(a)-groupPriority(b)).map(k=>({
+    label: groupLabel(k),
+    items: groups[k].sort((x,y)=>new Date(x.kickoff||0)-new Date(y.kickoff||0))
+  }));
+}
+
 /* ---- Φόρτωση δεδομένων ---- */
+function isLocked(m){
+  return !!m.finished || (!!m.kickoff && new Date(m.kickoff).getTime() <= Date.now());
+}
+function fmtKick(iso){
+  if(!iso) return '';
+  return new Date(iso).toLocaleString('el-GR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
 async function loadAll(){
-  const [{data:m},{data:pr},{data:pd}] = await Promise.all([
+  const [{data:m},{data:pr},{data:adj},{data:tr}] = await Promise.all([
     sb.from('matches').select('*').order('id'),
-    sb.from('profiles').select('id,username'),
-    sb.from('predictions').select('*')
+    sb.from('profiles').select('id,username,is_admin'),
+    sb.from('point_adjustments').select('*'),
+    sb.from('team_rosters').select('*')
   ]);
-  cacheMatches = m||[]; cacheProfiles = pr||[]; cachePreds = pd||[];
-  renderPredict(); renderResults(); renderBoard();
+  cacheMatches = m||[]; cacheProfiles = pr||[]; cacheAdj = adj||[];
+  cacheTeamRosters = {};
+  (tr||[]).forEach(r=>{ cacheTeamRosters[r.team_name] = r.players||[]; });
+  // Ιδιωτικότητα: φέρνουμε ΠΑΝΤΑ τις δικές μας προβλέψεις, αλλά των άλλων
+  // ΜΟΝΟ για αγώνες που έχουν ήδη ΚΛΕΙΔΩΣΕΙ (πέρασε η ώρα έναρξης ή έχουν
+  // ολοκληρωθεί). Έτσι όλοι βλέπουν τι έπαιξε ο καθένας μόλις ξεκινήσει ο
+  // αγώνας, αλλά κανείς δεν βλέπει τις προβλέψεις των άλλων ΠΡΙΝ κλειδώσουν.
+  const lockedIds = cacheMatches.filter(isLocked).map(x=>x.id);
+  const { data:mine } = await sb.from('predictions').select('*').eq('user_id', me.id);
+  let others = [];
+  if(lockedIds.length){
+    const { data:o } = await sb.from('predictions').select('*').neq('user_id', me.id).in('match_id', lockedIds);
+    others = o||[];
+  }
+  cachePreds = (mine||[]).concat(others);
+  renderPredict(); renderResults(); renderBoard(); renderRecap();
+  if(myProfile.is_admin){ renderUsers(); renderTeamRosters(); }
+}
+
+/* ---- Σχόλια / τσατ παρέας ---- */
+let cacheChat = [];
+function fmtChatTime(iso){
+  return new Date(iso).toLocaleString('el-GR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+async function loadChat(){
+  const { data, error } = await sb.from('messages').select('*').order('created_at',{ascending:true}).limit(300);
+  if(error){ $('chatBox').innerHTML = `<div class="empty">Δεν μπόρεσα να φορτώσω τα σχόλια (έχεις φτιάξει τον πίνακα messages;)</div>`; return; }
+  cacheChat = data||[];
+  renderChat();
+}
+function renderChat(){
+  const box=$('chatBox');
+  if(cacheChat.length===0){ box.innerHTML='<div class="empty">Κανείς δεν έχει γράψει ακόμα — ξεκίνα εσύ!</div>'; return; }
+  box.innerHTML = cacheChat.map(m=>`
+    <div class="bubble ${m.user_id===me.id?'me':''}">
+      <div class="who">${avatarHtml(m.username)} ${esc(m.username)}</div>
+      <div class="body">${esc(m.body)}</div>
+      <div class="when">${fmtChatTime(m.created_at)}</div>
+    </div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+async function sendChat(){
+  const input = $('chatMsg');
+  const body = input.value.trim();
+  if(!body) return;
+  input.value='';
+  const { error } = await sb.from('messages').insert({ user_id:me.id, username:myProfile.username, body });
+  if(error){ alert('Σφάλμα: '+error.message); input.value=body; }
+}
+function subscribeChat(){
+  sb.channel('messages-live')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, payload=>{
+      cacheChat.push(payload.new);
+      renderChat();
+    })
+    .subscribe();
 }
 
 /* ---- Καρτέλες ---- */
@@ -256,45 +443,116 @@ document.querySelectorAll('.tabs button').forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
-    ['predict','results','board'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
+    ['predict','results','board','recap','chat','users','rosters'].forEach(t=>$('tab-'+t).classList.toggle('hidden', t!==b.dataset.tab));
+    if(b.dataset.tab==='chat'){ const box=$('chatBox'); box.scrollTop = box.scrollHeight; }
   };
 });
 
+/* ---- Επιλογή σκόρερ από λίστα παικτών, με αριθμό γκολ ο καθένας ---- */
+function roster(m){
+  const a = cacheTeamRosters[m.team_a] || m.roster_a || [];
+  const b = cacheTeamRosters[m.team_b] || m.roster_b || [];
+  return [...a, ...b];
+}
+function currentMax(prefix, id){
+  const aEl = $((prefix==='p'?'pa_':'ra_')+id), bEl = $((prefix==='p'?'pb_':'rb_')+id);
+  return (+(aEl&&aEl.value||0)) + (+(bEl&&bEl.value||0));
+}
+function scorerPicker(prefix, id, players, selectedMap, disabled){
+  if(!players || players.length===0){
+    return `<div class="kickoff">Δεν έχει οριστεί λίστα παικτών για αυτόν τον αγώνα ακόμα.</div>`;
+  }
+  selectedMap = selectedMap || {};
+  return `<div class="players" id="${prefix}players_${id}">` + players.map(name=>{
+    const cnt = selectedMap[name] || 0;
+    const minus = disabled ? '' : `<button type="button" class="sm pc-btn" onclick="bumpScorer(this,'${prefix}',${id},-1)">−</button>`;
+    const plus  = disabled ? '' : `<button type="button" class="sm pc-btn" onclick="bumpScorer(this,'${prefix}',${id},1)">+</button>`;
+    return `<div class="player-chip ${cnt>0?'on':''}" data-name="${esc(name)}">
+      <span>${esc(name)}</span>
+      ${minus}
+      <span class="pc-count" data-count="${cnt}">${cnt||''}</span>
+      ${plus}
+    </div>`;
+  }).join('') + `</div>`;
+}
+function sumScorers(prefix, id){
+  const box = $(prefix+'players_'+id);
+  if(!box) return 0;
+  return [...box.querySelectorAll('.pc-count')].reduce((s,el)=>s+(+el.dataset.count||0),0);
+}
+function bumpScorer(btn, prefix, id, delta){
+  const chip = btn.closest('.player-chip');
+  const countEl = chip.querySelector('.pc-count');
+  let cur = +countEl.dataset.count || 0;
+  if(delta>0){
+    const max = currentMax(prefix, id);
+    if(sumScorers(prefix, id) >= max){ toast(`Το πολύ ${max} γκολ συνολικά (όσα και το προβλεπόμενο σκορ)`); return; }
+  }
+  cur = Math.max(0, cur+delta);
+  countEl.dataset.count = cur;
+  countEl.textContent = cur>0?cur:'';
+  chip.classList.toggle('on', cur>0);
+}
+function getScorerMap(prefix, id){
+  const box = $(prefix+'players_'+id);
+  if(!box) return {};
+  const map = {};
+  box.querySelectorAll('.player-chip').forEach(chip=>{
+    const cnt = +chip.querySelector('.pc-count').dataset.count || 0;
+    if(cnt>0) map[chip.dataset.name] = cnt;
+  });
+  return map;
+}
+
 /* ---- Προβλέψεις (κάθε χρήστης βλέπει & σώζει τις δικές του) ---- */
 function myPred(matchId){ return cachePreds.find(p=>p.user_id===me.id && p.match_id===matchId); }
+function predictCardHtml(m){
+  const pr = myPred(m.id) || {pred_a:'',pred_b:'',scorers_detail:{}};
+  const locked = isLocked(m);
+  let mine='';
+  if(m.finished){ mine = `<div class="pts-mine">Κέρδισες: ${scorePred(pr,m)} πόντους</div>`; }
+  let badge='';
+  if(m.finished){ badge = `<span class="badge ok">${m.res_a}–${m.res_b}</span>`; }
+  else if(locked){ badge = `<span class="badge lock">🔒 Κλείδωσε</span>`; }
+  return `<div class="match">
+    <div class="match-head">
+      <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)}</span>
+      ${badge}
+    </div>
+    ${m.kickoff?`<div class="kickoff">⏱ Έναρξη: ${fmtKick(m.kickoff)}</div>`:''}
+    <div class="score-row" style="margin-top:9px">
+      <input type="number" min="0" id="pa_${m.id}" value="${pr.pred_a}" ${locked?'disabled':''} placeholder="0">
+      <span class="vs">–</span>
+      <input type="number" min="0" id="pb_${m.id}" value="${pr.pred_b}" ${locked?'disabled':''} placeholder="0">
+    </div>
+    <div style="margin-top:9px">
+      <label>Σκόρερ — πόσα γκολ ο καθένας (έως όσα γκολ προβλέπεις συνολικά)</label>
+      ${scorerPicker('p', m.id, roster(m), pr.scorers_detail||{}, locked)}
+    </div>
+    ${mine}
+    ${locked?'':`<button class="sm" style="margin-top:10px" onclick="savePred(${m.id})">Αποθήκευση</button>`}
+  </div>`;
+}
 function renderPredict(){
   const box=$('predList');
   if(cacheMatches.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες ακόμα</div>'; return; }
-  box.innerHTML = cacheMatches.map(m=>{
-    const pr = myPred(m.id) || {pred_a:'',pred_b:'',scorers:[]};
-    const locked = m.finished;
-    const scStr = (pr.scorers||[]).join(', ');
-    let mine='';
-    if(locked){ mine = `<div class="pts-mine">Κέρδισες: ${scorePred(pr,m)} πόντους</div>`; }
-    return `<div class="match">
-      <div class="match-head">
-        <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)}</span>
-        ${locked?`<span class="badge ok">${m.res_a}–${m.res_b}</span>`:''}
-      </div>
-      <div class="score-row">
-        <input type="number" min="0" id="pa_${m.id}" value="${pr.pred_a}" ${locked?'disabled':''} placeholder="0">
-        <span class="vs">–</span>
-        <input type="number" min="0" id="pb_${m.id}" value="${pr.pred_b}" ${locked?'disabled':''} placeholder="0">
-      </div>
-      <div style="margin-top:9px">
-        <label>Σκόρερ (χώρισέ τους με κόμμα)</label>
-        <input id="ps_${m.id}" value="${esc(scStr)}" ${locked?'disabled':''} placeholder="π.χ. Messi, Alvarez">
-      </div>
-      ${mine}
-      ${locked?'':`<button class="sm" style="margin-top:10px" onclick="savePred(${m.id})">Αποθήκευση</button>`}
-    </div>`;
-  }).join('');
+  box.innerHTML = groupMatches(cacheMatches).map(g=>
+    `<div class="mday">${esc(g.label)}</div>` + g.items.map(predictCardHtml).join('')
+  ).join('');
 }
 async function savePred(id){
+  const m = cacheMatches.find(x=>x.id===id);
+  if(!m || isLocked(m)){ alert('Ο αγώνας έχει κλειδώσει, δεν μπορείς πλέον να αλλάξεις πρόβλεψη.'); await loadAll(); return; }
   const a=$('pa_'+id).value, b=$('pb_'+id).value;
   if(a===''||b===''){ alert('Συμπλήρωσε το σκορ'); return; }
-  const scorers = $('ps_'+id).value.split(',').map(s=>s.trim()).filter(Boolean);
-  const row = { user_id:me.id, match_id:id, pred_a:+a, pred_b:+b, scorers };
+  const scorers_detail = getScorerMap('p', id);
+  const totalGoals = Object.values(scorers_detail).reduce((s,n)=>s+n,0);
+  const maxScorers = (+a) + (+b);
+  if(totalGoals > maxScorers){
+    alert(`Με πρόβλεψη ${a}-${b} μπορείς να μοιράσεις το πολύ ${maxScorers} γκολ συνολικά στους σκόρερ.`);
+    return;
+  }
+  const row = { user_id:me.id, match_id:id, pred_a:+a, pred_b:+b, scorers_detail };
   const { error } = await sb.from('predictions').upsert(row, { onConflict:'user_id,match_id' });
   if(error){ alert('Σφάλμα: '+error.message); return; }
   await loadAll(); toast('Αποθηκεύτηκε ✓');
@@ -303,41 +561,75 @@ async function savePred(id){
 /* ---- Αποτελέσματα (admin) ---- */
 async function addMatch(){
   const a=$('newA').value.trim(), b=$('newB').value.trim();
+  const kickRaw = $('newKick').value;
+  const mday = $('newMday').value;
   if(!a||!b) return;
-  const { error } = await sb.from('matches').insert({ team_a:a, team_b:b });
+  const kickoff = kickRaw ? new Date(kickRaw).toISOString() : null;
+  const { error } = await sb.from('matches').insert({ team_a:a, team_b:b, kickoff, matchday: mday?+mday:null });
   if(error){ alert('Σφάλμα: '+error.message); return; }
-  $('newA').value=''; $('newB').value='';
+  $('newA').value=''; $('newB').value=''; $('newKick').value=''; $('newMday').value='';
   await loadAll(); toast('Προστέθηκε ο αγώνας ✓');
+}
+function toLocalInputValue(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function resultCardHtml(m){
+  const locked = isLocked(m);
+  const statusLabel = m.finished ? 'Καταχωρήθηκε' : (locked ? 'Κλειδωμένος' : 'Ανοιχτός');
+  const statusClass = m.finished ? 'ok' : (locked ? 'lock' : 'no');
+  const missing = [m.team_a, m.team_b].filter(t=>!cacheTeamRosters[t] || cacheTeamRosters[t].length===0);
+  return `<div class="match">
+    <div class="match-head">
+      <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)} ${m.matchday?`<span class="vs">· Αγ. ${m.matchday}</span>`:''}</span>
+      <span class="badge ${statusClass}">${statusLabel}</span>
+    </div>
+    <label style="margin-top:6px">Ώρα έναρξης</label>
+    <input id="rk_${m.id}" type="datetime-local" value="${toLocalInputValue(m.kickoff)}">
+    <label style="margin-top:9px">Αγωνιστική</label>
+    <input id="rm_${m.id}" type="number" min="1" value="${m.matchday??''}" placeholder="π.χ. 1">
+    <button class="sm ghost" style="margin-top:10px" onclick="saveMatchInfo(${m.id})">Αποθήκευση στοιχείων αγώνα</button>
+    <label style="margin-top:13px">Τελικό σκορ</label>
+    <div class="score-row">
+      <input type="number" min="0" id="ra_${m.id}" value="${m.res_a??''}" placeholder="0">
+      <span class="vs">–</span>
+      <input type="number" min="0" id="rb_${m.id}" value="${m.res_b??''}" placeholder="0">
+    </div>
+    <div style="margin-top:9px">
+      <label>Ποιοι σκόραραν — πόσα γκολ ο καθένας</label>
+      ${missing.length ? `<div class="kickoff">Λείπει ρόστερ για: ${missing.map(esc).join(', ')} — μπες στην καρτέλα "Ρόστερ Ομάδων".</div>` : ''}
+      ${scorerPicker('r', m.id, roster(m), m.scorers_detail||{}, false)}
+    </div>
+    <button class="sm" style="margin-top:10px" onclick="saveResult(${m.id})">Καταχώρηση αποτελέσματος</button>
+    <button class="sm ghost" style="margin-top:10px" onclick="delMatch(${m.id})">Διαγραφή</button>
+  </div>`;
 }
 function renderResults(){
   const box=$('resList');
   if(cacheMatches.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες</div>'; return; }
-  box.innerHTML = cacheMatches.map(m=>{
-    const scStr=(m.scorers||[]).join(', ');
-    return `<div class="match">
-      <div class="match-head">
-        <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)}</span>
-        <span class="badge ${m.finished?'ok':'no'}">${m.finished?'Καταχωρήθηκε':'—'}</span>
-      </div>
-      <div class="score-row">
-        <input type="number" min="0" id="ra_${m.id}" value="${m.res_a??''}" placeholder="0">
-        <span class="vs">–</span>
-        <input type="number" min="0" id="rb_${m.id}" value="${m.res_b??''}" placeholder="0">
-      </div>
-      <div style="margin-top:9px">
-        <label>Σκόρερ (με κόμμα)</label>
-        <input id="rs_${m.id}" value="${esc(scStr)}" placeholder="π.χ. Messi, Alvarez">
-      </div>
-      <button class="sm" style="margin-top:10px" onclick="saveResult(${m.id})">Καταχώρηση</button>
-      <button class="sm ghost" style="margin-top:10px" onclick="delMatch(${m.id})">Διαγραφή</button>
-    </div>`;
-  }).join('');
+  box.innerHTML = groupMatches(cacheMatches).map(g=>
+    `<div class="mday">${esc(g.label)}</div>` + g.items.map(resultCardHtml).join('')
+  ).join('');
+}
+async function saveMatchInfo(id){
+  const kickoff = $('rk_'+id).value ? new Date($('rk_'+id).value).toISOString() : null;
+  const matchday = $('rm_'+id).value ? +$('rm_'+id).value : null;
+  const { error } = await sb.from('matches').update({ kickoff, matchday }).eq('id', id);
+  if(error){ alert('Σφάλμα: '+error.message); return; }
+  await loadAll(); toast('Αποθηκεύτηκαν τα στοιχεία ✓');
 }
 async function saveResult(id){
   const a=$('ra_'+id).value, b=$('rb_'+id).value;
   if(a===''||b===''){ alert('Συμπλήρωσε το σκορ'); return; }
-  const scorers = $('rs_'+id).value.split(',').map(s=>s.trim()).filter(Boolean);
-  const { error } = await sb.from('matches').update({ res_a:+a, res_b:+b, scorers, finished:true }).eq('id', id);
+  const scorers_detail = getScorerMap('r', id);
+  const totalGoals = Object.values(scorers_detail).reduce((s,n)=>s+n,0);
+  if(totalGoals > (+a)+(+b)){
+    alert(`Με τελικό σκορ ${a}-${b} τα γκολ των σκόρερ δεν μπορεί να ξεπερνούν τα ${(+a)+(+b)}.`);
+    return;
+  }
+  const { error } = await sb.from('matches').update({ res_a:+a, res_b:+b, scorers_detail, finished:true }).eq('id', id);
   if(error){ alert('Σφάλμα: '+error.message); return; }
   await loadAll(); toast('Καταχωρήθηκε ✓');
 }
@@ -346,6 +638,19 @@ async function delMatch(id){
   await sb.from('matches').delete().eq('id', id);
   await loadAll();
 }
+async function syncNow(){
+  const btn = $('syncBtn');
+  btn.disabled = true; btn.textContent = 'Συγχρονισμός…';
+  try{
+    const { data, error } = await sb.functions.invoke('sync-fixtures');
+    if(error) throw error;
+    await loadAll();
+    toast(`Συγχρονίστηκαν ${data?.upserted ?? 0} αγώνες ✓`);
+  }catch(err){
+    alert('Δεν μπόρεσα να συγχρονίσω: '+(err.message||err)+'\nΈχεις ρυθμίσει τη Edge Function "sync-fixtures";');
+  }
+  btn.disabled = false; btn.textContent = '🔄 Συγχρονισμός τώρα';
+}
 
 /* ---- ΛΟΓΙΚΗ ΒΑΘΜΟΛΟΓΙΑΣ ---- */
 function scorePred(pr, m){
@@ -353,11 +658,23 @@ function scorePred(pr, m){
   let pts=0;
   if(pr.pred_a===m.res_a && pr.pred_b===m.res_b) pts += PTS_EXACT;
   else if(sign(pr.pred_a-pr.pred_b)===sign(m.res_a-m.res_b)) pts += PTS_OUTCOME;
-  // +1 για κάθε σωστό σκόρερ (case-insensitive)
-  const actual = (m.scorers||[]).map(s=>s.toLowerCase());
-  const guessed = [...new Set((pr.scorers||[]).map(s=>s.toLowerCase()))];
-  guessed.forEach(g=>{ if(actual.includes(g)) pts += PTS_SCORER; });
+  // +1 πόντος ανά γκολ που "πέτυχες" σε κάθε παίκτη: αν προβλέπεις Μέσσι 2 γκολ
+  // και βάλει 3, παίρνεις 2 πόντους (το μικρότερο). Συνολικά δεν μπορεί να
+  // ξεπεράσει όσα γκολ προέβλεψες (άμυνα ακόμα κι αν παρακαμφθεί η φόρμα).
+  const predicted = pr.scorers_detail || {};
+  const actual = m.scorers_detail || {};
+  const maxTotal = Math.max(0, (pr.pred_a||0) + (pr.pred_b||0));
+  let scorerPts = 0;
+  Object.keys(predicted).forEach(name=>{
+    const guess = predicted[name] || 0;
+    const real = actual[name] || 0;
+    scorerPts += Math.min(guess, real);
+  });
+  pts += Math.min(scorerPts, maxTotal) * PTS_SCORER;
   return pts;
+}
+function adjTotalFor(userId){
+  return cacheAdj.filter(a=>a.user_id===userId).reduce((s,a)=>s+a.amount,0);
 }
 function totalFor(userId){
   let t=0;
@@ -366,20 +683,144 @@ function totalFor(userId){
     const pr = cachePreds.find(p=>p.user_id===userId && p.match_id===m.id);
     if(pr) t += scorePred(pr, m);
   });
+  t += adjTotalFor(userId);
   return t;
+}
+function exactCountFor(userId){
+  let c=0;
+  cacheMatches.forEach(m=>{
+    if(!m.finished) return;
+    const pr = cachePreds.find(p=>p.user_id===userId && p.match_id===m.id);
+    if(pr && pr.pred_a===m.res_a && pr.pred_b===m.res_b) c++;
+  });
+  return c;
+}
+
+/* ---- Αναλυτικά: τι έβαλε ο καθένας ανά αγωνιστική (μόνο ολοκληρωμένοι αγώνες) ---- */
+function renderRecap(){
+  const box=$('recap');
+  const locked = cacheMatches.filter(isLocked);
+  if(locked.length===0){ box.innerHTML='<div class="empty">Δεν έχει κλειδώσει κανένας αγώνας ακόμα</div>'; return; }
+  box.innerHTML = groupMatches(locked).map(g=>{
+    const matchesHtml = g.items.map(m=>{
+      const rows = cacheProfiles.map(p=>{
+        const pr = cachePreds.find(x=>x.user_id===p.id && x.match_id===m.id);
+        if(!pr || pr.pred_a==null) return `<div class="recap-row"><span class="who">${avatarHtml(p.username)} ${esc(p.username)}</span><span class="det">Δεν προέβλεψε</span></div>`;
+        const sd = pr.scorers_detail || {};
+        const scStr = Object.keys(sd).length ? Object.entries(sd).map(([n,c])=>`${esc(n)} x${c}`).join(', ') : '—';
+        const ptsHtml = m.finished ? `<span class="rp">${scorePred(pr,m)}π</span>` : `<span class="rp" style="color:var(--mut)">⏳</span>`;
+        return `<div class="recap-row">
+          <span><span class="who">${avatarHtml(p.username)} ${esc(p.username)}</span><div class="det">${pr.pred_a}–${pr.pred_b} · ${scStr}</div></span>
+          ${ptsHtml}
+        </div>`;
+      }).join('');
+      const scoreLabel = m.finished ? `(${m.res_a}–${m.res_b})` : `<span class="badge lock">🔒 σε εξέλιξη</span>`;
+      return `<div style="margin-top:14px">
+        <div class="match-head"><span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)} <span class="vs">${scoreLabel}</span></span></div>
+        ${rows}
+      </div>`;
+    }).join('');
+    return `<div class="mday">${esc(g.label)}</div>${matchesHtml}`;
+  }).join('');
+}
+
+/* ---- Διαχείριση χρηστών (μόνο admin) ---- */
+function renderUsers(){
+  const box=$('usersList');
+  if(!box) return;
+  box.innerHTML = cacheProfiles.map(p=>{
+    const adj = adjTotalFor(p.id);
+    return `<div class="match" style="padding:12px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${avatarHtml(p.username)}
+        <span class="pname" style="flex:1">${esc(p.username)} ${p.is_admin?'<span class="badge ok">διαχειριστής</span>':''}${adj?`<span class="badge ${adj>0?'ok':'no'}"> ${adj>0?'+':''}${adj} bonus</span>`:''}</span>
+        <button class="sm ghost" onclick="toggleAdmin('${p.id}', ${!p.is_admin})">${p.is_admin?'Αφαίρεση admin':'Κάνε admin'}</button>
+        <button class="sm ghost" onclick="resetUserPassword('${p.id}','${esc(p.username)}')">Reset κωδικού</button>
+      </div>
+      <label style="margin-top:10px">Διόρθωση πόντων (bonus/ποινή)</label>
+      <div class="score-row">
+        <input type="number" id="adj_${p.id}" placeholder="π.χ. 3 ή -2" style="max-width:120px">
+        <input type="text" id="adjr_${p.id}" placeholder="λόγος (προαιρετικό)">
+      </div>
+      <button class="sm" style="margin-top:9px" onclick="adjustPoints('${p.id}','${esc(p.username)}')">Εφαρμογή</button>
+    </div>`;
+  }).join('');
+}
+async function adjustPoints(targetId, username){
+  const raw = $('adj_'+targetId).value;
+  const amount = parseInt(raw, 10);
+  if(!amount){ alert('Βάλε έναν αριθμό πόντων, θετικό ή αρνητικό (π.χ. 3 ή -2)'); return; }
+  const reason = $('adjr_'+targetId).value.trim();
+  if(!confirm(`${amount>0?'+':''}${amount} πόντοι στον/στην ${username}${reason?` (${reason})`:''}. Θα φανεί και στα Σχόλια. Συνέχεια;`)) return;
+  try{
+    const { data, error } = await sb.functions.invoke('admin-manage-user', { body:{ action:'adjust_points', target_user_id:targetId, amount, reason } });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    $('adj_'+targetId).value=''; $('adjr_'+targetId).value='';
+    await loadAll(); await loadChat();
+    toast('Ενημερώθηκαν οι πόντοι ✓');
+  }catch(err){ alert('Σφάλμα: '+(err.message||err)+'\nΈχεις ενημερώσει τη Edge Function "admin-manage-user";'); }
+}
+async function toggleAdmin(targetId, makeAdmin){
+  if(targetId===me.id && !makeAdmin && !confirm('Σίγουρα θέλεις να αφαιρέσεις τον εαυτό σου από διαχειριστή;')) return;
+  try{
+    const { data, error } = await sb.functions.invoke('admin-manage-user', { body:{ action:'set_admin', target_user_id:targetId, is_admin:makeAdmin } });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    await loadAll(); toast('Ενημερώθηκε ✓');
+  }catch(err){ alert('Σφάλμα: '+(err.message||err)); }
+}
+async function resetUserPassword(targetId, username){
+  if(!confirm(`Να γίνει reset ο κωδικός του/της ${username};`)) return;
+  try{
+    const { data, error } = await sb.functions.invoke('admin-manage-user', { body:{ action:'reset_password', target_user_id:targetId } });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    alert(`Νέος κωδικός για τον/την ${username}:\n\n${data.newPassword}\n\nΠες του/της τον για να συνδεθεί, μετά μπορεί να τον αλλάξει.`);
+  }catch(err){ alert('Σφάλμα: '+(err.message||err)+'\nΈχεις ρυθμίσει τη Edge Function "admin-manage-user";'); }
+}
+
+/* ---- Ρόστερ ομάδων (μία φορά ανά ομάδα, όχι ανά αγώνα) ---- */
+let teamSafeIdMap = {};
+function renderTeamRosters(){
+  const box=$('rostersList');
+  if(!box) return;
+  const teamNames = [...new Set(cacheMatches.flatMap(m=>[m.team_a, m.team_b]))].sort((a,b)=>a.localeCompare(b));
+  if(teamNames.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν ακόμα ομάδες (πρόσθεσε ή συγχρόνισε αγώνες πρώτα)</div>'; return; }
+  teamSafeIdMap = {};
+  box.innerHTML = teamNames.map(name=>{
+    const players = (cacheTeamRosters[name]||[]).join(', ');
+    const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
+    teamSafeIdMap[safeId] = name;
+    return `<div class="match">
+      <div class="match-head"><span>${esc(name)}</span>${players?`<span class="badge ok">${cacheTeamRosters[name].length} παίκτες</span>`:`<span class="badge no">κενό</span>`}</div>
+      <label style="margin-top:6px">Παίκτες (με κόμμα)</label>
+      <input id="tr_${safeId}" value="${esc(players)}" placeholder="π.χ. Messi, Alvarez, Di Maria, ...">
+      <button class="sm" style="margin-top:9px" onclick="saveTeamRoster('${safeId}')">Αποθήκευση</button>
+    </div>`;
+  }).join('');
+}
+async function saveTeamRoster(safeId){
+  const teamName = teamSafeIdMap[safeId];
+  if(!teamName) return;
+  const players = $('tr_'+safeId).value.split(',').map(s=>s.trim()).filter(Boolean);
+  const { error } = await sb.from('team_rosters').upsert({ team_name: teamName, players }, { onConflict:'team_name' });
+  if(error){ alert('Σφάλμα: '+error.message); return; }
+  await loadAll(); toast(`Αποθηκεύτηκε το ρόστερ της ${teamName} ✓`);
 }
 
 /* ---- Κατάταξη ---- */
 function renderBoard(){
   const box=$('board');
   if(cacheProfiles.length===0){ box.innerHTML='<div class="empty">Κανείς δεν έχει εγγραφεί ακόμα</div>'; return; }
-  const ranked = cacheProfiles.map(p=>({ id:p.id, name:p.username, pts:totalFor(p.id) }))
-                              .sort((a,b)=>b.pts-a.pts);
+  const ranked = cacheProfiles.map(p=>({ id:p.id, name:p.username, pts:totalFor(p.id), exact:exactCountFor(p.id), adj:adjTotalFor(p.id) }))
+                              .sort((a,b)=> b.pts-a.pts || b.exact-a.exact || a.name.localeCompare(b.name));
   box.innerHTML = ranked.map((p,i)=>`
     <div class="lrow ${p.id===me.id?'me':''}">
       <span class="rank">${i+1}</span>
+      ${avatarHtml(p.name)}
       <span class="pname">${esc(p.name)}</span>
-      <span class="pts">${p.pts} <small>πόντοι</small></span>
+      <span class="pts">${p.pts} <small>πόντοι${p.exact?` · ${p.exact} ακριβή`:''}${p.adj?` · ${p.adj>0?'+':''}${p.adj} bonus`:''}</small></span>
     </div>`).join('');
 }
 
