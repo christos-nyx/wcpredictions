@@ -523,6 +523,16 @@ function getScorerMap(prefix, id){
 }
 
 /* ---- Προβλέψεις (κάθε χρήστης βλέπει & σώζει τις δικές του) ---- */
+// Κρύψε "ορφανούς" αγώνες: ολοκληρωμένους χωρίς ΚΑΜΙΑ πρόβλεψη από κανέναν
+// (π.χ. αγώνες που έγιναν πριν ξεκινήσει η εφαρμογή). Δεν σβήνονται από τη
+// βάση — απλά δεν εμφανίζονται στις λίστες.
+function hasAnyPred(matchId){
+  if(myProfile && myProfile.is_admin) return cachePredMeta.some(x=>x.match_id===matchId);
+  return cachePreds.some(p=>p.match_id===matchId);
+}
+function visibleMatches(){
+  return cacheMatches.filter(m=>!m.finished || hasAnyPred(m.id));
+}
 function myPred(matchId){ return cachePreds.find(p=>p.user_id===me.id && p.match_id===matchId); }
 function predictCardHtml(m){
   const pr = myPred(m.id) || {pred_a:'',pred_b:'',scorers_detail:{}};
@@ -553,8 +563,9 @@ function predictCardHtml(m){
 }
 function renderPredict(){
   const box=$('predList');
-  if(cacheMatches.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες ακόμα</div>'; return; }
-  box.innerHTML = groupMatches(cacheMatches).map(g=>
+  const list = visibleMatches();
+  if(list.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες ακόμα</div>'; return; }
+  box.innerHTML = groupMatches(list).map(g=>
     `<div class="mday">${esc(g.label)}</div>` + g.items.map(predictCardHtml).join('')
   ).join('');
 }
@@ -640,8 +651,9 @@ function resultCardHtml(m){
 }
 function renderResults(){
   const box=$('resList');
-  if(cacheMatches.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες</div>'; return; }
-  box.innerHTML = groupMatches(cacheMatches).map(g=>
+  const list = visibleMatches();
+  if(list.length===0){ box.innerHTML='<div class="empty">Δεν υπάρχουν αγώνες</div>'; return; }
+  box.innerHTML = groupMatches(list).map(g=>
     `<div class="mday">${esc(g.label)}</div>` + g.items.map(resultCardHtml).join('')
   ).join('');
 }
@@ -731,7 +743,7 @@ function exactCountFor(userId){
 /* ---- Αναλυτικά: τι έβαλε ο καθένας ανά αγωνιστική (μόνο ολοκληρωμένοι αγώνες) ---- */
 function renderRecap(){
   const box=$('recap');
-  const locked = cacheMatches.filter(isLocked);
+  const locked = visibleMatches().filter(isLocked);
   if(locked.length===0){ box.innerHTML='<div class="empty">Δεν έχει κλειδώσει κανένας αγώνας ακόμα</div>'; return; }
   box.innerHTML = groupMatches(locked).map(g=>{
     const matchesHtml = g.items.map(m=>{
