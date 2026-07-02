@@ -253,7 +253,7 @@ const EMAIL_DOMAIN = '@wcpool.local';
 
 /* ----------------------------------------------------------------------- */
 let sb = null, me = null, myProfile = null;
-let cacheMatches = [], cacheProfiles = [], cachePreds = [], cacheAdj = [], cacheTeamRosters = {};
+let cacheMatches = [], cacheProfiles = [], cachePreds = [], cacheAdj = [], cacheTeamRosters = {}, cachePredMeta = [];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -399,6 +399,12 @@ async function loadAll(){
     others = o||[];
   }
   cachePreds = (mine||[]).concat(others);
+  // Admin: φέρε ΜΟΝΟ ποιος έχει προβλέψει σε ποιον αγώνα (όχι τα σκορ!)
+  cachePredMeta = [];
+  if(myProfile.is_admin){
+    const { data:pm } = await sb.from('predictions').select('user_id,match_id');
+    cachePredMeta = pm||[];
+  }
   renderPredict(); renderResults(); renderBoard(); renderRecap();
   if(myProfile.is_admin){ renderUsers(); renderTeamRosters(); }
 }
@@ -588,6 +594,19 @@ function toLocalInputValue(iso){
   const pad = n => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+// Admin: ποιοι έχουν προβλέψει τον αγώνα και ποιοι όχι (χωρίς να φαίνεται ΤΙ έβαλαν)
+function predStatusHtml(m){
+  if(m.finished) return ''; // σε τελειωμένους αγώνες δεν έχει νόημα
+  const done = [], pending = [];
+  cacheProfiles.forEach(p=>{
+    const has = cachePredMeta.some(x=>x.user_id===p.id && x.match_id===m.id);
+    (has?done:pending).push(p.username);
+  });
+  return `<div class="kickoff" style="margin-top:4px;line-height:1.7">
+    ✅ Έπαιξαν (${done.length}): ${done.length?done.map(esc).join(', '):'κανείς'}<br>
+    ⏳ Δεν έπαιξαν (${pending.length}): ${pending.length?pending.map(esc).join(', '):'κανείς'}
+  </div>`;
+}
 function resultCardHtml(m){
   const locked = isLocked(m);
   const statusLabel = m.finished ? 'Καταχωρήθηκε' : (locked ? 'Κλειδωμένος' : 'Ανοιχτός');
@@ -598,6 +617,7 @@ function resultCardHtml(m){
       <span>${esc(m.team_a)} <span class="vs">vs</span> ${esc(m.team_b)} ${m.matchday?`<span class="vs">· Αγ. ${m.matchday}</span>`:''}</span>
       <span class="badge ${statusClass}">${statusLabel}</span>
     </div>
+    ${predStatusHtml(m)}
     <label style="margin-top:6px">Ώρα έναρξης</label>
     <input id="rk_${m.id}" type="datetime-local" value="${toLocalInputValue(m.kickoff)}">
     <label style="margin-top:9px">Αγωνιστική</label>
